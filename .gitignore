@@ -1,0 +1,7 @@
+# Environment variables and secrets
+.env
+node_modules/
+dist/
+build/
+*.log
+.DS_Store

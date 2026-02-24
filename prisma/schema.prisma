@@ -1,0 +1,515 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId       String         @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  email        String         @unique @map("email")
+  phone        String?        @unique @map("phone")
+  fullName     String         @map("full_name")
+  passwordHash String         @map("password_hash")
+  role         Role           @default(learner) @map("role")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  cartItems    CartItem[]
+  cartLines    CartLine[]
+  enrollments  Enrollment[]
+  topicProgress TopicProgress[]
+  sessions     UserSession[]
+  tutorProfile Tutor?
+  personalizations TopicPersonalization[]
+  promptUsage ModulePromptUsage[]
+  personaProfiles LearnerPersonaProfile[]
+  cohortMemberships CohortMember[]
+  coldCallMessages ColdCallMessage[]
+  coldCallStars ColdCallStar[]
+  activityEvents LearnerActivityEvent[]
+  ragChatSessions RagChatSession[]
+  ragChatMessages RagChatMessage[]
+
+  @@map("users")
+}
+
+enum Role {
+  learner
+  tutor
+  admin
+}
+
+enum StudyPersona {
+  normal
+  sports
+  cooking
+  adventure
+}
+
+enum LearnerPersonaProfileKey {
+  non_it_migrant
+  rote_memorizer
+  english_hesitant
+  last_minute_panic
+  pseudo_coder
+}
+
+enum RagChatRole {
+  user
+  assistant
+  system
+}
+
+model Course {
+  courseId    String      @id @default(dbgenerated("gen_random_uuid()")) @map("course_id") @db.Uuid
+  slug        String      @unique @map("slug")
+  courseName  String      @map("course_name")
+  description String
+  priceCents  Int         @default(0) @map("price_cents")
+  category    String      @default("General") @map("category")
+  level       String      @default("Beginner") @map("level")
+  instructor  String      @default("Staff Instructor") @map("instructor")
+  durationMinutes Int     @default(0) @map("duration_minutes")
+  rating      Float       @default(4.5) @map("rating")
+  students    Int         @default(0) @map("students")
+  thumbnailUrl String?    @map("thumbnail_url")
+  heroVideoUrl String?    @map("hero_video_url")
+  isFeatured  Boolean     @default(false) @map("is_featured")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  cartLines   CartLine[]
+  enrollments Enrollment[]
+  topics      Topic[]
+  tutors      CourseTutor[]
+  personalizations TopicPersonalization[]
+  promptSuggestions TopicPromptSuggestion[]
+  promptUsage ModulePromptUsage[]
+  personaProfiles LearnerPersonaProfile[]
+  cohorts     Cohort[]
+  coldCallPrompts ColdCallPrompt[]
+  activityEvents LearnerActivityEvent[]
+  ragChatSessions RagChatSession[]
+
+  @@map("courses")
+}
+
+model CartItem {
+  cartItemId  String   @id @default(dbgenerated("gen_random_uuid()")) @map("cart_item_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  courseSlug  String   @map("course_slug")
+  courseTitle String   @map("course_title")
+  coursePrice Int      @default(0) @map("course_price")
+  courseData  Json?    @map("course_data")
+  addedAt     DateTime @default(now()) @map("added_at")
+  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, courseSlug], map: "uq_cart_item_user_slug")
+  @@map("cart_items")
+}
+
+model Cohort {
+  cohortId  String   @id @default(dbgenerated("gen_random_uuid()")) @map("cohort_id") @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  name      String   @map("name")
+  isActive  Boolean  @default(true) @map("is_active")
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  course    Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  members   CohortMember[]
+  batchProjects CohortBatchProject[]
+  coldCallMessages ColdCallMessage[]
+
+  @@index([courseId], map: "idx_cohort_course")
+  @@map("cohorts")
+}
+
+model CohortMember {
+  memberId String   @id @default(dbgenerated("gen_random_uuid()")) @map("member_id") @db.Uuid
+  cohortId String   @map("cohort_id") @db.Uuid
+  userId   String?  @map("user_id") @db.Uuid
+  email    String   @map("email")
+  status   String   @default("active") @map("status")
+  batchNo  Int      @default(1) @map("batch_no")
+  addedAt  DateTime @default(now()) @map("added_at")
+  cohort   Cohort   @relation(fields: [cohortId], references: [cohortId], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [userId], onDelete: SetNull)
+
+  @@unique([cohortId, email], map: "uq_cohort_email")
+  @@index([userId], map: "idx_cohort_member_user")
+  @@map("cohort_members")
+}
+
+model CohortBatchProject {
+  projectId String   @id @default(dbgenerated("gen_random_uuid()")) @map("project_id") @db.Uuid
+  cohortId  String   @map("cohort_id") @db.Uuid
+  batchNo   Int      @map("batch_no")
+  payload   Json     @map("payload")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  cohort    Cohort   @relation(fields: [cohortId], references: [cohortId], onDelete: Cascade)
+
+  @@unique([cohortId, batchNo], map: "uq_cohort_batch_projects_cohort_batch")
+  @@index([cohortId], map: "idx_cohort_batch_projects_cohort")
+  @@map("cohort_batch_projects")
+}
+
+model ColdCallPrompt {
+  promptId     String   @id @default(dbgenerated("gen_random_uuid()")) @map("prompt_id") @db.Uuid
+  courseId     String   @map("course_id") @db.Uuid
+  topicId      String   @map("topic_id") @db.Uuid
+  promptText   String   @map("prompt_text")
+  helperText   String?  @map("helper_text")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  course       Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  topic        Topic    @relation(fields: [topicId], references: [topicId], onDelete: Cascade)
+  messages     ColdCallMessage[]
+
+  @@unique([topicId, displayOrder], map: "uq_cold_call_prompt_topic_order")
+  @@index([courseId], map: "idx_cold_call_prompt_course")
+  @@index([topicId], map: "idx_cold_call_prompt_topic")
+  @@map("cold_call_prompts")
+}
+
+model ColdCallMessage {
+  messageId String   @id @default(dbgenerated("gen_random_uuid()")) @map("message_id") @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  cohortId  String   @map("cohort_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  parentId  String?  @map("parent_id") @db.Uuid
+  rootId    String?  @map("root_id") @db.Uuid
+  body      String   @map("body")
+  status    String   @default("active") @map("status")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  prompt    ColdCallPrompt @relation(fields: [promptId], references: [promptId], onDelete: Cascade)
+  cohort    Cohort   @relation(fields: [cohortId], references: [cohortId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  parent    ColdCallMessage? @relation("ColdCallMessageParent", fields: [parentId], references: [messageId], onDelete: Cascade)
+  children  ColdCallMessage[] @relation("ColdCallMessageParent")
+  root      ColdCallMessage? @relation("ColdCallMessageRoot", fields: [rootId], references: [messageId], onDelete: Cascade)
+  rootReplies ColdCallMessage[] @relation("ColdCallMessageRoot")
+  stars     ColdCallStar[]
+
+  @@index([promptId, cohortId], map: "idx_cold_call_message_prompt")
+  @@index([rootId], map: "idx_cold_call_message_root")
+  @@index([parentId], map: "idx_cold_call_message_parent")
+  @@map("cold_call_messages")
+}
+
+model ColdCallStar {
+  starId    String   @id @default(dbgenerated("gen_random_uuid()")) @map("star_id") @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  message   ColdCallMessage @relation(fields: [messageId], references: [messageId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([messageId, userId], map: "uq_cold_call_star_user")
+  @@index([messageId], map: "idx_cold_call_star_message")
+  @@index([userId], map: "idx_cold_call_star_user")
+  @@map("cold_call_stars")
+}
+
+model CartLine {
+  cartLineId   String     @id @default(dbgenerated("gen_random_uuid()")) @map("cart_line_id") @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  courseId     String     @map("course_id") @db.Uuid
+  status       String     @default("open")
+  quantity     Int        @default(1)
+  addedAt      DateTime   @default(now()) @map("added_at")
+  checkedOutAt DateTime?  @map("checked_out_at")
+  checkoutRef  String?    @map("checkout_ref")
+  user         User       @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course       Course     @relation(fields: [courseId], references: [courseId], onDelete: Restrict)
+
+  @@map("cart_lines")
+}
+
+model Enrollment {
+  enrollmentId String   @id @default(dbgenerated("gen_random_uuid()")) @map("enrollment_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  courseId     String   @map("course_id") @db.Uuid
+  status       String   @default("active")
+  paidCents    String?  @map("paid_cents")
+  providerTxn  String?  @map("provider_txn")
+  enrolledAt   DateTime @default(now()) @map("enrolled_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course       Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId], map: "uq_user_course_enroll")
+  @@map("enrollments")
+}
+
+model Topic {
+  topicId     String          @id @default(dbgenerated("gen_random_uuid()")) @map("topic_id") @db.Uuid
+  courseId    String          @map("course_id") @db.Uuid
+  moduleNo    Int             @map("module_no")
+  moduleName  String          @map("module_name")
+  topicNumber Int             @map("topic_number")
+  topicName   String          @map("topic_name")
+  contentType String          @default("video") @map("content_type")
+  pptUrl      String?         @map("ppt_url")
+  videoUrl    String?         @map("video_url")
+  textContent String?         @map("text_content")
+  textContentSports String?   @map("text_content_sports")
+  textContentCooking String?  @map("text_content_cooking")
+  textContentAdventure String? @map("text_content_adventure")
+  isPreview   Boolean         @default(false) @map("is_preview")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  course      Course          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  progress    TopicProgress[]
+  promptSuggestions TopicPromptSuggestion[]
+  coldCallPrompts ColdCallPrompt[]
+  simulation  SimulationExercise?
+  activityEvents LearnerActivityEvent[]
+  ragChatSessions RagChatSession[]
+
+  @@unique([courseId, moduleNo, topicNumber], map: "uq_topic_per_module")
+  @@map("topics")
+}
+
+model TopicProgress {
+  progressId   String    @id @default(dbgenerated("gen_random_uuid()")) @map("progress_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  topicId      String    @map("topic_id") @db.Uuid
+  isCompleted  Boolean   @default(false) @map("is_completed")
+  lastPosition Int       @default(0) @map("last_position_s")
+  updatedAt    DateTime  @default(now()) @map("updated_at")
+  completedAt  DateTime? @map("completed_at")
+  user         User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  topic        Topic     @relation(fields: [topicId], references: [topicId], onDelete: Cascade)
+
+  @@unique([userId, topicId], map: "uq_progress_user_topic")
+  @@map("topic_progress")
+}
+
+model TopicPersonalization {
+  personalizationId String       @id @default(dbgenerated("gen_random_uuid()")) @map("personalization_id") @db.Uuid
+  userId            String       @map("user_id") @db.Uuid
+  courseId          String       @map("course_id") @db.Uuid
+  persona           StudyPersona @default(normal)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  user              User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course            Course       @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId], map: "uq_topic_personalization_user_course")
+  @@map("topic_personalization")
+}
+
+model LearnerPersonaProfile {
+  profileId       String                   @id @default(dbgenerated("gen_random_uuid()")) @map("profile_id") @db.Uuid
+  userId          String                   @map("user_id") @db.Uuid
+  courseId        String                   @map("course_id") @db.Uuid
+  personaKey      LearnerPersonaProfileKey @map("persona_key")
+  rawAnswers      Json                     @map("raw_answers")
+  analysisSummary String?                  @map("analysis_summary")
+  analysisVersion String?                  @map("analysis_version")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  user            User                     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course          Course                   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId], map: "uq_persona_profile_user_course")
+  @@index([courseId], map: "idx_persona_profile_course")
+  @@index([userId], map: "idx_persona_profile_user")
+  @@map("learner_persona_profiles")
+}
+
+model TopicPromptSuggestion {
+  suggestionId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("suggestion_id") @db.Uuid
+  courseId           String?  @map("course_id") @db.Uuid
+  topicId            String?  @map("topic_id") @db.Uuid
+  parentSuggestionId String?  @map("parent_suggestion_id") @db.Uuid
+  promptText         String   @map("prompt_text")
+  answer             String?  @map("answer")
+  displayOrder       Int      @default(0) @map("display_order")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  course             Course?  @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  topic              Topic?   @relation(fields: [topicId], references: [topicId], onDelete: Cascade)
+  parent             TopicPromptSuggestion? @relation("SuggestionChildren", fields: [parentSuggestionId], references: [suggestionId], onDelete: Cascade)
+  children           TopicPromptSuggestion[] @relation("SuggestionChildren")
+
+  @@index([courseId], map: "idx_prompt_course")
+  @@index([topicId], map: "idx_prompt_topic")
+  @@index([parentSuggestionId], map: "idx_prompt_parent")
+  @@map("topic_prompt_suggestions")
+}
+
+model SimulationExercise {
+  exerciseId String   @id @default(dbgenerated("gen_random_uuid()")) @map("exercise_id") @db.Uuid
+  topicId    String   @unique @map("topic_id") @db.Uuid
+  title      String
+  body       Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  topic      Topic    @relation(fields: [topicId], references: [topicId], onDelete: Cascade)
+
+  @@map("simulation_exercises")
+}
+
+model UserSession {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  jwtId          String   @unique @map("jwt_id")
+  refreshToken   String   @map("refresh_token")
+  createdAt      DateTime @default(now()) @map("created_at")
+  expiresAt      DateTime @map("expires_at")
+  user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId], map: "idx_user_sessions_user_id")
+  @@map("user_sessions")
+}
+
+model TutorApplication {
+  applicationId     String   @id @default(dbgenerated("gen_random_uuid()")) @map("application_id") @db.Uuid
+  fullName          String   @map("full_name")
+  email             String
+  phone             String?
+  headline          String
+  courseTitle       String   @map("course_title")
+  courseDescription String   @map("course_description")
+  targetAudience    String   @map("target_audience")
+  expertiseArea     String   @map("expertise_area")
+  experienceYears   Int?     @map("experience_years")
+  availability      String   @map("availability")
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("tutor_applications")
+}
+
+model Tutor {
+  tutorId     String         @id @default(dbgenerated("gen_random_uuid()")) @map("tutor_id") @db.Uuid
+  userId      String         @unique @map("user_id") @db.Uuid
+  displayName String         @map("display_name")
+  bio         String?        @map("bio")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  user        User           @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  courses     CourseTutor[]
+
+  @@map("tutors")
+}
+
+model CourseTutor {
+  courseTutorId String   @id @default(dbgenerated("gen_random_uuid()")) @map("course_tutor_id") @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  tutorId       String   @map("tutor_id") @db.Uuid
+  role          String   @default("owner") @map("role")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  course        Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  tutor         Tutor    @relation(fields: [tutorId], references: [tutorId], onDelete: Cascade)
+
+  @@unique([courseId, tutorId], map: "uq_course_tutor_assignment")
+  @@map("course_tutors")
+}
+
+model PageContent {
+  pageId     String   @id @default(dbgenerated("gen_random_uuid()")) @map("page_id") @db.Uuid
+  slug       String   @unique
+  title      String
+  subtitle   String?
+  heroImage  String?  @map("hero_image")
+  sections   Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("page_content")
+}
+
+model ModulePromptUsage {
+  usageId    String   @id @default(dbgenerated("gen_random_uuid()")) @map("usage_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  courseId   String   @map("course_id") @db.Uuid
+  moduleNo   Int      @map("module_no")
+  typedCount Int      @default(0) @map("typed_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId, moduleNo], map: "uq_prompt_usage_user_course_module")
+  @@map("module_prompt_usage")
+}
+
+model CourseChunk {
+  chunkId  String                 @id @map("chunk_id")
+  courseId String                 @map("course_id")
+  position Int                    @map("position")
+  content  String
+  embedding Unsupported("vector") @map("embedding")
+
+  @@index([courseId], map: "idx_course_chunks_course_id")
+  @@map("course_chunks")
+}
+
+model RagChatSession {
+  sessionId           String    @id @default(dbgenerated("gen_random_uuid()")) @map("session_id") @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  courseId            String    @map("course_id") @db.Uuid
+  topicId             String    @map("topic_id") @db.Uuid
+  summary             String?   @map("summary")
+  summaryMessageCount Int       @default(0) @map("summary_message_count")
+  summaryUpdatedAt    DateTime? @map("summary_updated_at")
+  lastMessageAt       DateTime? @map("last_message_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  user                User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course              Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  topic               Topic     @relation(fields: [topicId], references: [topicId], onDelete: Cascade)
+  messages            RagChatMessage[]
+
+  @@unique([userId, courseId, topicId], map: "uq_cp_rag_chat_session_user_course_topic")
+  @@index([courseId], map: "idx_cp_rag_chat_session_course")
+  @@index([userId], map: "idx_cp_rag_chat_session_user")
+  @@map("cp_rag_chat_sessions")
+}
+
+model RagChatMessage {
+  messageId String      @id @default(dbgenerated("gen_random_uuid()")) @map("message_id") @db.Uuid
+  sessionId String      @map("session_id") @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  role      RagChatRole @map("role")
+  content   String      @map("content")
+  createdAt DateTime    @default(now()) @map("created_at")
+  session   RagChatSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([sessionId, createdAt], map: "idx_cp_rag_chat_message_session_created")
+  @@index([userId], map: "idx_cp_rag_chat_message_user")
+  @@map("cp_rag_chat_messages")
+}
+
+model LearnerActivityEvent {
+  eventId       String    @id @default(dbgenerated("gen_random_uuid()")) @map("event_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  courseId      String    @map("course_id") @db.Uuid
+  moduleNo      Int?      @map("module_no")
+  topicId       String?   @map("topic_id") @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json?     @map("payload")
+  derivedStatus String?   @map("derived_status")
+  statusReason  String?   @map("status_reason")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  user          User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course        Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  topic         Topic?    @relation(fields: [topicId], references: [topicId], onDelete: SetNull)
+
+  @@index([courseId, userId, createdAt], map: "idx_learner_activity_course_user_created")
+  @@index([userId, createdAt], map: "idx_learner_activity_user_created")
+  @@index([topicId], map: "idx_learner_activity_topic")
+  @@map("learner_activity_events")
+}

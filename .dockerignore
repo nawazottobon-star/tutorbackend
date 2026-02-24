@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Build outputs (will be built in container)
+dist/
+build/
+
+# Version control
+.git/
+.gitignore
+
+# Environment files (use env_file in docker-compose)
+.env
+.env.*
+!.env.example
+
+# IDE and editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+tests/
+coverage/
+.vitest/
+vitest.config.ts
+
+# Documentation
+README.md
+*.md
+!prisma/*.md
+
+# Docker files (not needed in build context recursively)
+docker-compose*.yml
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+npx
+tmp-*.js
+
+# Scripts (only needed for development)
+scripts/

@@ -1,0 +1,53 @@
+{
+  "name": "course-platform-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start:dev-fast": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "test": "vitest",
+    "rag:ingest": "tsx scripts/ingestCourseContent.ts",
+    "rag:import": "tsx scripts/importCourseChunks.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "diagnose": "tsx diagnose-progress.ts",
+    "verify-api": "tsx verify-api.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.17.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.6.0",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.2.1",
+    "google-auth-library": "^10.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.12",
+    "openai": "^6.9.0",
+    "pdf-parse": "^2.4.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.16.11",
+    "@types/nodemailer": "^7.0.5",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/supertest": "^2.0.16",
+    "prisma": "^6.17.0",
+    "supertest": "^7.1.1",
+    "tslib": "^2.7.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.14"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
