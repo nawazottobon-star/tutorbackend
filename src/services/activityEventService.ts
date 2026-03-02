@@ -145,11 +145,30 @@ export async function getLatestStatusesForCourse(courseId: string, cohortId?: st
 
   const summaries: LearnerStatusRow[] = [];
   grouped.forEach((events) => {
-    const summary = deriveStatusFromEvents(events);
-    if (summary) {
-      // Perform runtime struggle analysis
-      summary.analysis = analyzeStruggle(events);
-      summaries.push(summary);
+    const summaryRow = deriveStatusFromEvents(events);
+    if (summaryRow) {
+      const analysis = analyzeStruggle(events);
+
+      // ── GUARANTEED FALLBACK CLASSIFICATION ──────────────────────────────
+      // If analyzeStruggle() couldn't determine a category (dominantStruggle='None')
+      // but we already know the learner's status from derivedStatus, force a mapping.
+      if (analysis.dominantStruggle === 'None') {
+        const ds = summaryRow.derivedStatus;
+        if (ds === 'content_friction') {
+          analysis.dominantStruggle = 'No Understanding';
+          analysis.severity = 'High';
+          analysis.explanation = 'Learner is actively trying but failing assessments or seeking excessive help — a clear sign of cognitive friction.';
+          if (!analysis.signals.length) analysis.signals = ['Content friction detected in recent activity'];
+        } else if (ds === 'attention_drift') {
+          analysis.dominantStruggle = 'No Interest';
+          analysis.severity = 'Medium';
+          analysis.explanation = 'Learner shows low motivation — high idle time or attention drift detected.';
+          if (!analysis.signals.length) analysis.signals = ['Attention drift detected in recent activity'];
+        }
+      }
+
+      summaryRow.analysis = analysis;
+      summaries.push(summaryRow);
     }
   });
 
@@ -184,69 +203,145 @@ export function analyzeStruggle(events: LearnerStatusRow[]): StruggleAnalysis {
   const now = new Date();
   const signals: string[] = [];
 
-  // 1. SIGNAL DERIVATION
+  // ── 1. SIGNAL DERIVATION (all 22 event types) ──────────────────────────
 
-  // Quiz failures and retries
+  // Quiz signals
   const quizFailures = events.filter(e => e.eventType === 'quiz.fail').length;
   const quizRetries = events.filter(e => e.eventType === 'quiz.retry').length;
+  const quizStarts = events.filter(e => e.eventType === 'quiz.start').length;
+  const quizSubmits = events.filter(e => e.eventType === 'quiz.submit').length;
+  const quizPasses = events.filter(e => e.eventType === 'quiz.pass').length;
+
+  // quiz_select without a matching quiz.start → looked but walked away
+  const quizSelects = events.filter(e => e.eventType === 'lesson.quiz_select').length;
+  const quizSelectDropOff = Math.max(0, quizSelects - quizStarts);
+
   if (quizFailures > 2) signals.push(`Multiple quiz failures (${quizFailures})`);
-  if (quizRetries > 3) signals.push(`Frequent retries (${quizRetries})`);
+  if (quizRetries > 3) signals.push(`Frequent quiz retries (${quizRetries})`);
+  if (quizSelectDropOff > 2) signals.push('Opened quiz but did not attempt it');
 
-  // Idle and Session patterns
-  const idleEvents = events.filter(e => e.eventType.startsWith('idle.'));
-  const idleRatio = idleEvents.length / Math.max(1, events.length);
+  // Tutor / help-seeking signals
+  const tutorPromptTyped = events.filter(e => e.eventType === 'tutor.prompt_typed').length;
+  const tutorPromptSuggestion = events.filter(e => e.eventType === 'tutor.prompt_suggestion').length;
+  const tutorResponseReceived = events.filter(e => e.eventType === 'tutor.response_received').length;
+  const totalTutorHelp = tutorPromptTyped + tutorPromptSuggestion + tutorResponseReceived;
+  if (totalTutorHelp > 5) signals.push('High help-seeking intensity');
+
+  // Cold-call signals
+  const coldCallLoaded = events.filter(e => e.eventType === 'cold_call.loaded').length;
+  const coldCallSubmits = events.filter(e => e.eventType === 'cold_call.submit').length;
+  const coldCallStars = events.filter(e => e.eventType === 'cold_call.star').length;
+  const coldCallReplies = events.filter(e => e.eventType === 'cold_call.reply').length;
+  // Loaded prompt but never submitted → disengaged from cold-calls
+  const coldCallDropOff = Math.max(0, coldCallLoaded - coldCallSubmits);
+  if (coldCallDropOff > 3) signals.push('Cold-call prompts ignored frequently');
+
+  // Idle / attention signals
+  const idleStarts = events.filter(e => e.eventType === 'idle.start');
+  const tabHiddenCount = idleStarts.filter(e => {
+    const p = e.statusReason ?? '';
+    return p.includes('tab_hidden');
+  }).length;
+  const idleRatio = idleStarts.length / Math.max(1, events.length);
   if (idleRatio > 0.4) signals.push('High idle ratio detected');
+  if (tabHiddenCount > 3) signals.push('Frequently switching away from the tab');
 
-  // Video engagement
+  // Lesson navigation signals
+  const lessonViews = events.filter(e => e.eventType === 'lesson.view').length;
+  const lessonNavigates = events.filter(e => e.eventType === 'lesson.navigate').length;
+  const lockedClicks = events.filter(e => e.eventType === 'lesson.locked_click').length;
+
+  // Detect repeated navigation on the same topic
+  const topicNavigateCounts = new Map<string, number>();
+  events.filter(e => e.eventType === 'lesson.navigate' && e.topicId).forEach(e => {
+    topicNavigateCounts.set(e.topicId!, (topicNavigateCounts.get(e.topicId!) ?? 0) + 1);
+  });
+  const repeatedTopics = [...topicNavigateCounts.values()].filter(c => c >= 3).length;
+  if (repeatedTopics > 0) signals.push(`Revisiting same content repeatedly (${repeatedTopics} topics)`);
+  if (lockedClicks > 2) signals.push('Clicking locked lessons (frustrated or bored)');
+
+  // Persona signals
+  const personaRestarts = events.filter(e => e.eventType === 'persona.survey_restart').length;
+  if (personaRestarts > 0) signals.push('Restarted learning-style survey');
+
+  // Progress signals
+  const progressSnapshots = events.filter(e => e.eventType === 'progress.snapshot');
+  const avgProgress = progressSnapshots.length > 0
+    ? progressSnapshots.reduce((sum, e) => {
+      const pct = typeof e.statusReason === 'string' ? 0 : 0; // payload not in row, use 0
+      return sum + pct;
+    }, 0) / progressSnapshots.length
+    : 0;
+
+  // Video signals (legacy support)
   const videoPlays = events.filter(e => e.eventType === 'video.play').length;
   const videoEnds = events.filter(e => e.eventType === 'video.end').length;
   const videoPauses = events.filter(e => e.eventType === 'video.pause').length;
   if (videoPlays > 0 && videoEnds === 0) signals.push('Videos started but not finished');
-  if (videoPauses > 5) signals.push('Frequent video pausing');
-
-  // Tutor interactions
-  const tutorPrompts = events.filter(e => e.eventType === 'tutor.prompt').length;
-  if (tutorPrompts > 5) signals.push('High help-seeking intensity');
 
   // Session fragmentation
   const sessionStarts = events.filter(e => e.eventType === 'session.start').length;
   if (sessionStarts > 3) signals.push('Fragmented session pattern');
 
-  // 2. SCORING MODEL (WEIGHTS)
+  // ── 2. SCORING (all 22 events mapped to 4 categories) ─────────────────
 
-  // No Understanding (Cognitive Friction)
-  scores['No Understanding'] += quizFailures * 25;
-  scores['No Understanding'] += quizRetries * 10;
-  scores['No Understanding'] += tutorPrompts * 5;
-  if (scores['No Understanding'] > 100) scores['No Understanding'] = 100;
+  // ❓ NO UNDERSTANDING — actively trying but failing / seeking help
+  scores['No Understanding'] += quizFailures * 25;   // quiz.fail
+  scores['No Understanding'] += quizRetries * 10;   // quiz.retry
+  scores['No Understanding'] += tutorPromptTyped * 8;    // tutor.prompt_typed
+  scores['No Understanding'] += tutorPromptSuggestion * 5; // tutor.prompt_suggestion
+  scores['No Understanding'] += tutorResponseReceived * 5; // tutor.response_received
+  scores['No Understanding'] += coldCallReplies * 5;    // cold_call.reply
+  scores['No Understanding'] += personaRestarts * 10;   // persona.survey_restart
+  scores['No Understanding'] += coldCallStars * 3;    // cold_call.star (engaged but confused)
+  scores['No Understanding'] = Math.min(100, scores['No Understanding']);
 
-  // Not Engaging (Content/System Failure)
-  scores['Not Engaging'] += videoPauses * 15;
-  if (videoPlays > 0 && videoEnds === 0) scores['Not Engaging'] += 30;
-  if (scores['Not Engaging'] > 100) scores['Not Engaging'] = 100;
+  // 😴 NO INTEREST — low motivation, not trying, giving up
+  scores['No Interest'] += idleRatio * 80;  // idle.start (ratio)
+  scores['No Interest'] += lockedClicks * 8;   // lesson.locked_click
+  scores['No Interest'] += quizSelectDropOff * 10;  // lesson.quiz_select without quiz.start
+  // Failed but never retried → gave up
+  if (quizFailures > 0 && quizRetries === 0) scores['No Interest'] += 20;
+  // Quiz submit but never passed → disengaged
+  if (quizSubmits > 0 && quizPasses === 0) scores['No Interest'] += 10;
+  scores['No Interest'] = Math.min(100, scores['No Interest']);
 
-  // No Interest (Motivation)
-  scores['No Interest'] += idleRatio * 80;
-  if (quizFailures > 0 && quizRetries === 0) scores['No Interest'] += 20; // Fails but doesn't try again
-  if (scores['No Interest'] > 100) scores['No Interest'] = 100;
+  // 😒 NOT ENGAGING — present but content not holding attention
+  scores['Not Engaging'] += coldCallDropOff * 12;   // cold_call.loaded without submit
+  scores['Not Engaging'] += repeatedTopics * 15;   // lesson.navigate same topic 3×
+  scores['Not Engaging'] += videoPauses * 10;   // video.pause
+  if (videoPlays > 0 && videoEnds === 0) scores['Not Engaging'] += 20; // video.play with no video.end
+  scores['Not Engaging'] += personaRestarts * 8;    // persona.survey_restart
+  scores['Not Engaging'] = Math.min(100, scores['Not Engaging']);
 
-  // No Time (External Constraint)
-  scores['No Time'] += sessionStarts * 20;
-  if (scores['No Time'] > 100) scores['No Time'] = 100;
+  // ⏰ NO TIME — external friction, fragmented sessions
+  scores['No Time'] += tabHiddenCount * 15;   // idle.start with tab_hidden
+  scores['No Time'] += sessionStarts * 20;   // session.start (many = fragmented)
+  // Many lesson views spread across too many events = sporadic visits
+  if (lessonViews > 5 && (lessonViews / Math.max(1, events.length)) < 0.2) {
+    scores['No Time'] += 15;
+  }
+  scores['No Time'] = Math.min(100, scores['No Time']);
 
-  // 3. DECAY LOGIC (Time-based)
-  const latestEventAt = sortedEvents[0].createdAt.getTime();
-  const hoursSinceLastActivity = (now.getTime() - latestEventAt) / (1000 * 60 * 60);
+  // ── 3. DERIVE FROM derivedStatus if raw scoring is too low ──────────────
+  // Adds fallback scores from existing derivedStatus so older events still
+  // contribute even when specific event types have low raw counts.
+  const derivedStatusCounts = {
+    content_friction: events.filter(e => e.derivedStatus === 'content_friction').length,
+    attention_drift: events.filter(e => e.derivedStatus === 'attention_drift').length,
+    engaged: events.filter(e => e.derivedStatus === 'engaged').length,
+  };
 
-  // Apply decay to all scores based on inactivity
-  // No Interest decays faster after activity, No Understanding stays longer
-  (Object.keys(scores) as StruggleType[]).forEach(key => {
-    if (key === 'None') return;
-    const decayRate = key === 'No Understanding' ? 0.01 : 0.05; // Understanding persists longer
-    scores[key] = Math.max(0, scores[key] * Math.pow(1 - decayRate, hoursSinceLastActivity));
+  scores['No Understanding'] += derivedStatusCounts.content_friction * 12;
+  scores['No Interest'] += derivedStatusCounts.attention_drift * 10;
+  scores['No Time'] += derivedStatusCounts.attention_drift * 5;
+
+  // Re-cap at 100
+  (Object.keys(scores) as StruggleType[]).forEach(k => {
+    if (k !== 'None') scores[k] = Math.min(100, scores[k]);
   });
 
-  // 4. DOMINANT STRUGGLE & SEVERITY
+  // ── 4. DOMINANT STRUGGLE & SEVERITY ───────────────────────────────────
   let maxScore = 0;
   let dominant: StruggleType = 'None';
 
@@ -258,25 +353,22 @@ export function analyzeStruggle(events: LearnerStatusRow[]): StruggleAnalysis {
     }
   });
 
-  // Handle ties or low confidence
-  if (maxScore < 15) {
-    dominant = 'None';
-  }
+  if (maxScore < 8) dominant = 'None';
 
   let severity: 'Low' | 'Medium' | 'High' = 'Low';
   if (maxScore > 70) severity = 'High';
   else if (maxScore > 30) severity = 'Medium';
 
-  // 5. CONTENT FRICTION REDEFINITION
+  // ── 5. CONTENT FRICTION FLAG ──────────────────────────────────────────
   const contentFriction = (dominant as string) === 'No Understanding' || (dominant as string) === 'Not Engaging';
 
-  // 6. HUMAN-READABLE EXPLANATION
+  // ── 6. EXPLANATION ────────────────────────────────────────────────────
   const explanations: Record<StruggleType, string> = {
-    'No Understanding': 'Learner is actively trying but failing assessments or seeking excessive help, indicating cognitive friction.',
-    'Not Engaging': 'Learner shows signs of boredom or system frustration through frequent pauses and incomplete videos.',
-    'No Interest': 'Low engagement and high idle time suggest a lack of motivation or disconnection from the module.',
-    'No Time': 'Fragmented session patterns suggest external constraints are preventing focused study.',
-    'None': 'No significant struggle patterns detected.',
+    'No Understanding': 'Learner is actively trying but failing assessments or seeking excessive help — a clear sign of cognitive friction.',
+    'Not Engaging': 'Learner is present but not interacting with content meaningfully — cold-calls ignored, topics revisited, videos abandoned.',
+    'No Interest': 'Learner shows low motivation — high idle time, giving up on quizzes, clicking locked content out of frustration.',
+    'No Time': 'Fragmented session patterns suggest external interruptions are preventing focused study time.',
+    'None': 'No significant struggle pattern detected — learner appears to be on track.',
   };
 
   return {

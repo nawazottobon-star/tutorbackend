@@ -39,6 +39,15 @@ router.get(
             }
         });
 
+        // 🔍 TEMP DEBUG — remove after confirming friction radar works
+        console.log('[FrictionDebug] learners:', learners.map(l => ({
+            name: l.fullName,
+            derivedStatus: l.derivedStatus,
+            dominant: l.analysis?.dominantStruggle,
+            severity: l.analysis?.severity,
+            scores: l.analysis?.scores,
+        })));
+
         res.json({ learners, summary });
     })
 );

@@ -8,7 +8,8 @@ services:
     container_name: cp-backend-api
     restart: unless-stopped
     ports:
-      - "4000:4000"
+      # Exposes container port 4000 to host port 3333 to avoid conflicts
+      - "3333:4000"
     env_file:
       - .env
     environment:

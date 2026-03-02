@@ -14,7 +14,8 @@ RUN apk add --no-cache libc6-compat python3 make g++
 COPY package.json package-lock.json ./
 
 # Install all dependencies (including devDependencies for build)
-RUN npm ci
+# Using npm install as fallback in case package-lock.json is out of sync
+RUN npm ci || npm install
 
 # ============================================
 # Stage 2: Build the application
@@ -61,7 +62,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY package.json package-lock.json ./
 
 # Install production dependencies + prisma CLI + tsx (for ES module resolution)
-RUN npm ci --omit=dev && \
+RUN (npm ci --omit=dev || npm install --omit=dev) && \
     npm install prisma@6.17.0 tsx@4.19.1 && \
     npm cache clean --force
 
