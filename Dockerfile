@@ -61,21 +61,17 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install production dependencies + prisma CLI + tsx (for ES module resolution)
+# Install ONLY production dependencies
 RUN (npm ci --omit=dev || npm install --omit=dev) && \
-    npm install prisma@6.17.0 tsx@4.19.1 && \
     npm cache clean --force
 
-# Copy Prisma schema and generate client for production
+# Copy Prisma schema and entrypoint script
 COPY prisma ./prisma
-RUN npx prisma generate
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
-
-# Copy source files for tsx (it needs the .ts source for proper resolution)
-COPY --from=builder /app/src ./src
-COPY tsconfig.json tsconfig.build.json ./
 
 # Change ownership to non-root user
 RUN chown -R appuser:nodejs /app
@@ -90,5 +86,8 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:4000/health || exit 1
 
-# Start the application using tsx for proper ES module resolution
-CMD ["npx", "tsx", "src/server.ts"]
+# Use entrypoint script for safety (Prisma generation, etc.)
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# Start the application using compiled JS for better performance
+CMD ["node", "dist/server.js"]
