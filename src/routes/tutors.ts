@@ -95,6 +95,28 @@ tutorsRouter.post(
   }),
 );
 
+tutorsRouter.get(
+  "/me/has-courses",
+  requireAuth,
+  requireTutor,
+  asyncHandler(async (req, res) => {
+    const auth = (req as AuthenticatedRequest).auth;
+    if (!auth) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const count = await prisma.courseTutor.count({
+      where: {
+        isActive: true,
+        tutor: { userId: auth.userId },
+      },
+    });
+
+    res.json({ hasCourses: count > 0 });
+  })
+);
+
 tutorsRouter.post(
   "/assistant/query",
   requireAuth,

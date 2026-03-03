@@ -30,6 +30,7 @@ model User {
   activityEvents LearnerActivityEvent[]
   ragChatSessions RagChatSession[]
   ragChatMessages RagChatMessage[]
+  courseSubmissionsReviewed CourseSubmission[]
 
   @@map("users")
 }
@@ -398,6 +399,7 @@ model Tutor {
   updatedAt   DateTime       @updatedAt @map("updated_at")
   user        User           @relation(fields: [userId], references: [userId], onDelete: Cascade)
   courses     CourseTutor[]
+  courseSubmissions CourseSubmission[]
 
   @@map("tutors")
 }
@@ -453,7 +455,42 @@ model CourseChunk {
   embedding Unsupported("vector") @map("embedding")
 
   @@index([courseId], map: "idx_course_chunks_course_id")
-  @@map("course_chunks")
+  @@map("course_chunk_fts")
+}
+
+
+model CourseSubmission {
+  submissionId       String                 @id @default(dbgenerated("gen_random_uuid()")) @map("submission_id") @db.Uuid
+  tutorId            String                 @map("tutor_id") @db.Uuid
+  courseName         String                 @map("course_name")
+  description        String
+  targetAudience     String                 @map("target_audience")
+  durationWeeks      Int                    @map("duration_weeks")
+  category           String                 @map("category")
+  moduleCount        Int                    @default(1) @map("module_count")
+  uploadedDocuments  Json                   @default("[]") @map("uploaded_documents")
+  videoLinks         Json                   @default("[]") @map("video_links")
+  priceHigh          Decimal                @db.Decimal(10, 2) @map("price_high")
+  priceLow           Decimal                @db.Decimal(10, 2) @map("price_low")
+  discountPercent    Int                    @map("discount_percent")
+  apiKeyEncrypted    String?                @map("api_key_encrypted")
+  apiKeyHint         String?                @map("api_key_hint")
+  apiKeyProvider     String?                @default("openai") @map("api_key_provider")
+  apiKeyLastUsedAt   DateTime?              @db.Timestamptz() @map("api_key_last_used_at")
+  status             String                 @default("draft")
+  rejectionReason    String?                @map("rejection_reason")
+  reviewedBy         String?                @map("reviewed_by") @db.Uuid
+  reviewedAt         DateTime?              @db.Timestamptz() @map("reviewed_at")
+  createdAt          DateTime               @default(now()) @db.Timestamptz() @map("created_at")
+  updatedAt          DateTime               @default(now()) @db.Timestamptz() @map("updated_at")
+
+  tutor              Tutor                  @relation(fields: [tutorId], references: [tutorId], onDelete: Cascade)
+  reviewer           User?                  @relation(fields: [reviewedBy], references: [userId], onDelete: SetNull)
+
+  @@index([tutorId], map: "idx_course_submissions_tutor")
+  @@index([status], map: "idx_course_submissions_status")
+  @@index([createdAt(sort: Desc)], map: "idx_course_submissions_created")
+  @@map("course_submissions")
 }
 
 model RagChatSession {

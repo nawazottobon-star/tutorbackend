@@ -13,6 +13,7 @@ import { env } from "./config/env";
 import { tutorsRouter } from "./routes/tutors";
 import { adminRouter } from "./routes/admin";
 import { activityRouter } from "./routes/activity";
+import { courseSubmissionsRouter } from "./routes/courseSubmissions";
 
 export function createApp(): Express {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp(): Express {
   app.use("/tutor-applications", tutorApplicationsRouter);
   app.use("/pages", pagesRouter);
   app.use("/tutors", tutorsRouter);
+  app.use("/course-submissions", courseSubmissionsRouter);
   app.use("/admin", adminRouter);
   app.use("/activity", activityRouter);
 
@@ -64,6 +66,7 @@ export function createApp(): Express {
   apiRouter.use("/tutor-applications", tutorApplicationsRouter);
   apiRouter.use("/pages", pagesRouter);
   apiRouter.use("/tutors", tutorsRouter);
+  apiRouter.use("/course-submissions", courseSubmissionsRouter);
   apiRouter.use("/admin", adminRouter);
   apiRouter.use("/activity", activityRouter);
   app.use("/api", apiRouter);
