@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { verifyPassword } from './src/utils/password';
+import { verifyPassword } from '../src/shared/utils/password';
 import dotenv from 'dotenv';
 dotenv.config();
 

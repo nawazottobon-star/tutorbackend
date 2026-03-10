@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import { env } from "../config/env";
-import { PERSONA_KEYS } from "../services/personaPromptTemplates";
 
 
 const client = new OpenAI({
@@ -306,45 +305,3 @@ Rewrite this message following the guidelines above.`;
   });
 }
 
-export async function classifyLearnerPersona(options: {
-  responses: Array<{ question: string; answer: string }>;
-}): Promise<{ personaKey: string; reasoning: string }> {
-  const responsesBlock = options.responses
-    .map((item, index) => `Q${index + 1}: ${item.question}\nA${index + 1}: ${item.answer}`)
-    .join("\n\n");
-  const personaDefinitions = [
-    "non_it_migrant: new to IT, anxious about programming, prefers slow explanations and real-world analogies.",
-    "rote_memorizer: knows theory but struggles to implement, wants templates and exam-style patterns.",
-    "english_hesitant: understands logic but struggles with English fluency, needs simple language.",
-    "last_minute_panic: behind schedule, needs fast, high-impact guidance and a clear action plan.",
-    "pseudo_coder: copy-pastes code, needs line-by-line clarity and small changes to build understanding.",
-  ].join("\n");
-
-  const prompt = [
-    "Classify the learner into exactly one persona key from the list below.",
-    "Return a JSON object with keys: personaKey, reasoning.",
-    `Persona keys: ${PERSONA_KEYS.join(", ")}`,
-    "Persona definitions:",
-    personaDefinitions,
-    "",
-    "Learner responses:",
-    responsesBlock,
-  ].join("\n");
-
-  const raw = await runChatCompletion({
-    systemPrompt:
-      "You are a strict classifier. Return JSON only and choose exactly one personaKey from the provided list.",
-    userPrompt: prompt,
-    temperature: 0.1,
-    maxTokens: 200,
-  });
-
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1) {
-    throw new Error("Persona classification response did not include JSON.");
-  }
-
-  const jsonBlock = raw.slice(start, end + 1);
-  return JSON.parse(jsonBlock) as { personaKey: string; reasoning: string };
-}

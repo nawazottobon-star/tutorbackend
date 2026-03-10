@@ -31,6 +31,7 @@ model User {
   ragChatSessions RagChatSession[]
   ragChatMessages RagChatMessage[]
   courseSubmissionsReviewed CourseSubmission[]
+  registrations    Registration[]
 
   @@map("users")
 }
@@ -91,6 +92,7 @@ model Course {
   coldCallPrompts ColdCallPrompt[]
   activityEvents LearnerActivityEvent[]
   ragChatSessions RagChatSession[]
+  offerings      CourseOffering[]
 
   @@map("courses")
 }
@@ -398,6 +400,7 @@ model Tutor {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
   user        User           @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  workshops   Workshop[]
   courses     CourseTutor[]
   courseSubmissions CourseSubmission[]
 
@@ -549,4 +552,119 @@ model LearnerActivityEvent {
   @@index([userId, createdAt], map: "idx_learner_activity_user_created")
   @@index([topicId], map: "idx_learner_activity_topic")
   @@map("learner_activity_events")
+}
+
+enum ProgramType {
+  cohort
+  ondemand
+  workshop
+}
+
+enum AssessmentAudience {
+  all
+  cohort
+  ondemand
+  workshop
+
+  @@map("AssessmentAudience")
+}
+
+enum AssessmentQuestionType {
+  mcq
+  text
+
+  @@map("QuestionType")
+}
+
+model CourseOffering {
+  offeringId          String               @id @default(dbgenerated("gen_random_uuid()")) @map("offering_id") @db.Uuid
+  courseId            String               @map("course_id") @db.Uuid
+  programType         ProgramType          @map("program_type")
+  title               String               @map("title")
+  description         String?              @map("description")
+  isActive            Boolean              @map("is_active")
+  priceCents          Int                  @map("price_cents")
+  applicationRequired Boolean              @map("application_required")
+  assessmentRequired Boolean              @map("assessment_required")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  course              Course               @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  workshop            Workshop?
+  workshopSessions    WorkshopSession[]
+  questions           AssessmentQuestion[]
+  registrations       Registration[]
+
+  @@unique([courseId, programType, title])
+  @@map("course_offerings")
+}
+
+model AssessmentQuestion {
+  questionId     String                 @id @default(dbgenerated("gen_random_uuid()")) @map("question_id") @db.Uuid
+  offeringId     String?                @map("offering_id") @db.Uuid
+  programType    AssessmentAudience    @map("program_type")
+  questionNumber Int                    @map("question_number")
+  questionText   String                 @map("question_text")
+  questionType   AssessmentQuestionType @map("question_type")
+  mcqOptions     Json?                  @map("mcq_options")
+  isActive       Boolean                @map("is_active")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  offering       CourseOffering?       @relation(fields: [offeringId], references: [offeringId], onDelete: SetNull)
+
+  @@map("assessment_questions")
+}
+
+model Registration {
+  registrationId       String         @id @default(dbgenerated("gen_random_uuid()")) @map("registration_id") @db.Uuid
+  offeringId           String         @map("offering_id") @db.Uuid
+  userId               String?        @map("user_id") @db.Uuid
+  fullName             String         @map("full_name")
+  email                String         @map("email")
+  phoneNumber          String         @map("phone_number")
+  collegeName          String         @map("college_name")
+  yearOfPassing        String         @map("year_of_passing")
+  branch               String         @map("branch")
+  referredBy           String?        @map("referred_by")
+  selectedSlot         String?        @map("selected_slot")
+  sessionTime          String?        @map("session_time")
+  mode                 String?        @map("mode")
+  status               String         @map("status")
+  answersJson          Json?          @map("answers_json")
+  questionsSnapshot    Json?          @map("questions_snapshot")
+  assessmentSubmittedAt DateTime?     @map("assessment_submitted_at")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  sessionId            String?        @map("session_id") @db.Uuid
+  offering             CourseOffering @relation(fields: [offeringId], references: [offeringId], onDelete: Cascade)
+  user                 User?          @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  session              WorkshopSession? @relation(fields: [sessionId], references: [sessionId], onDelete: SetNull)
+
+  @@map("registrations")
+}
+
+model Workshop {
+    workshopId     String         @id @default(dbgenerated("gen_random_uuid()")) @map("workshop_id") @db.Uuid
+    offeringId     String         @unique @map("offering_id") @db.Uuid
+    tutorId        String         @map("tutor_id") @db.Uuid
+    googleMeetLink String         @map("google_meet_link")
+    maxSeats       Int?           @map("max_seats")
+    createdAt      DateTime       @default(now()) @map("created_at")
+    updatedAt      DateTime       @updatedAt @map("updated_at")
+    offering       CourseOffering @relation(fields: [offeringId], references: [offeringId], onDelete: Cascade)
+    tutor          Tutor          @relation(fields: [tutorId], references: [tutorId], onDelete: Cascade)
+
+    @@map("workshops")
+}
+
+model WorkshopSession {
+    sessionId       String         @id @default(dbgenerated("gen_random_uuid()")) @map("session_id") @db.Uuid
+    offeringId      String         @map("offering_id") @db.Uuid
+    scheduledAt     DateTime       @map("scheduled_at")
+    durationMinutes Int?           @map("duration_minutes")
+    sessionNo       Int            @default(1) @map("session_no")
+    createdAt       DateTime       @default(now()) @map("created_at")
+    offering        CourseOffering @relation(fields: [offeringId], references: [offeringId], onDelete: Cascade)
+    registrations   Registration[]
+
+    @@index([offeringId], map: "idx_workshop_sessions_offering")
+    @@map("workshop_sessions")
 }

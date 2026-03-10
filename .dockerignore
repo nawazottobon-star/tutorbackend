@@ -41,6 +41,13 @@ README.md
 *.md
 !prisma/*.md
 
+# Tests and Development Scripts (Critical for security & image size)
+tests/
+scripts/
+tmp/
+*.ts
+!src/**/*.tsmd
+
 # Docker files (not needed in build context recursively)
 docker-compose*.yml
 .dockerignore

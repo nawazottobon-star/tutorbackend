@@ -32,3 +32,15 @@ export async function findOrCreateUserFromGoogle(profile: GoogleProfile): Promis
     },
   });
 }
+
+export async function findUserById(userId: string) {
+  return prisma.user.findUnique({
+    where: { userId },
+    select: {
+      userId: true,
+      email: true,
+      fullName: true,
+      createdAt: true,
+    },
+  });
+}

@@ -14,6 +14,8 @@ import { tutorsRouter } from "./routes/tutors";
 import { adminRouter } from "./routes/admin";
 import { activityRouter } from "./routes/activity";
 import { courseSubmissionsRouter } from "./routes/courseSubmissions";
+import { workshopsRouter } from "./routes/workshops";
+import { publicWorkshopsRouter } from "./routes/publicWorkshops";
 
 export function createApp(): Express {
   const app = express();
@@ -69,6 +71,8 @@ export function createApp(): Express {
   apiRouter.use("/course-submissions", courseSubmissionsRouter);
   apiRouter.use("/admin", adminRouter);
   apiRouter.use("/activity", activityRouter);
+  apiRouter.use("/workshops", workshopsRouter);
+  apiRouter.use("/public/workshops", publicWorkshopsRouter);
   app.use("/api", apiRouter);
 
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

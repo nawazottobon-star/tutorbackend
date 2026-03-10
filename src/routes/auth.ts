@@ -1,64 +1,22 @@
 import express from "express";
 import { asyncHandler } from "../shared/utils/asyncHandler";
-import { generateGoogleAuthUrl, exchangeCodeForTokens, verifyGoogleIdToken } from "../services/googleOAuth";
-import { findOrCreateUserFromGoogle } from "../services/userService";
-import { createSession, deleteSessionByRefreshToken, renewSessionTokens } from "../services/sessionService";
+import { generateGoogleAuthUrl } from "../services/googleOAuth";
+import { deleteSessionByRefreshToken, renewSessionTokens } from "../services/sessionService";
 import { createOauthStateCookie, readOauthStateCookie, clearOauthStateCookie } from "../shared/utils/oauthState";
 import { env } from "../config/env";
-import { prisma } from "../services/prisma";
-import { verifyPassword } from "../shared/utils/password";
+import { loginWithPassword, processGoogleCodeExchange, processGoogleIdToken } from "../services/authService";
 
 export const authRouter = express.Router();
 
 authRouter.post(
   "/login",
   asyncHandler(async (req, res) => {
-    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-    const password = typeof req.body?.password === "string" ? req.body.password : "";
-
-    if (!email || !password) {
-      res.status(400).json({ message: "email and password are required" });
-      return;
+    const result = await loginWithPassword(req.body?.email, req.body?.password);
+    if (result.status === 200 && result.data) {
+      res.status(200).json(result.data);
+    } else {
+      res.status(result.status).json({ message: result.message });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { userId: true, passwordHash: true, fullName: true, role: true },
-    });
-
-    if (!user || user.role === "learner") {
-      res.status(403).json({ message: "Tutor or admin account required" });
-      return;
-    }
-
-    if (!user.passwordHash) {
-      res.status(401).json({ message: "This account uses Google Sign-In. Please log in with Google." });
-      return;
-    }
-
-    const passwordValid = await verifyPassword(password, user.passwordHash);
-    if (!passwordValid) {
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
-    }
-
-    const tokens = await createSession(user.userId, user.role);
-
-    res.status(200).json({
-      user: {
-        id: user.userId,
-        email,
-        fullName: user.fullName,
-        role: user.role,
-      },
-      session: {
-        accessToken: tokens.accessToken,
-        accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
-        refreshToken: tokens.refreshToken,
-        refreshTokenExpiresAt: tokens.refreshTokenExpiresAt.toISOString(),
-        sessionId: tokens.sessionId,
-      },
-    });
   }),
 );
 
@@ -86,9 +44,7 @@ authRouter.get(
           callbackUrl.searchParams.set(key, value);
         }
       });
-
       console.log("OAuth redirect URL:", callbackUrl.toString());
-
       res.redirect(callbackUrl.toString());
     };
 
@@ -113,10 +69,7 @@ authRouter.get(
     }
 
     try {
-      const { profile } = await exchangeCodeForTokens(code);
-      const user = await findOrCreateUserFromGoogle(profile);
-      const tokens = await createSession(user.userId, user.role);
-
+      const { profile, user, tokens } = await processGoogleCodeExchange(code);
       redirectToFrontend({
         accessToken: tokens.accessToken,
         accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
@@ -149,9 +102,7 @@ authRouter.post(
       return;
     }
 
-    const { profile } = await exchangeCodeForTokens(code);
-    const user = await findOrCreateUserFromGoogle(profile);
-    const tokens = await createSession(user.userId, user.role);
+    const { profile, user, tokens } = await processGoogleCodeExchange(code);
 
     res.status(200).json({
       user: {
@@ -185,9 +136,7 @@ authRouter.post(
       return;
     }
 
-    const profile = await verifyGoogleIdToken(idToken.trim());
-    const user = await findOrCreateUserFromGoogle(profile);
-    const tokens = await createSession(user.userId, user.role);
+    const { profile, user, tokens } = await processGoogleIdToken(idToken.trim());
 
     res.status(200).json({
       user: {

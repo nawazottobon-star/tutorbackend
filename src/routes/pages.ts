@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma } from "../services/prisma";
+import { getPageBySlug } from "../services/pageContentService";
 import { asyncHandler } from "../shared/utils/asyncHandler";
 
 const pagesRouter = express.Router();
@@ -13,9 +13,7 @@ pagesRouter.get(
       return;
     }
 
-    const page = await prisma.pageContent.findUnique({
-      where: { slug },
-    });
+    const page = await getPageBySlug(slug);
 
     if (!page) {
       res.status(404).json({ message: "Page not found" });
