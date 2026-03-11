@@ -1,7 +1,7 @@
-import express from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { requireAuth } from "../middleware/requireAuth";
-import { getAllCourses, getCourseById, resolveCourseIdOrError, mapCourse } from "../services/courseService";
+﻿import express from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { getAllCourses, getCourseById, resolveCourseIdOrError, mapCourse } from "../services/courseService.js";
 
 const coursesRouter = express.Router();
 

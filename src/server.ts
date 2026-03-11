@@ -1,7 +1,7 @@
-import process from "node:process";
-import { createApp } from "./app";
-import { env } from "./config/env";
-import { prisma } from "./services/prisma";
+﻿import process from "node:process";
+import { createApp } from "./app.js";
+import { env } from "./config/env.js";
+import { prisma } from "./services/prisma.js";
 
 const app = createApp();
 

@@ -1,8 +1,8 @@
-import express from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { requireAuth } from "../middleware/requireAuth";
-import { requireAdmin } from "../middleware/requireRole";
-import { getTutorApplications, approveTutorApplication } from "../services/adminService";
+﻿import express from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { requireAdmin } from "../middleware/requireRole.js";
+import { getTutorApplications, approveTutorApplication } from "../services/adminService.js";
 
 const adminRouter = express.Router();
 

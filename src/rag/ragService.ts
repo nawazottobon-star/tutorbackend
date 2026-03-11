@@ -1,8 +1,8 @@
-import { Prisma } from "@prisma/client";
-import { createEmbedding, generateAnswerFromContext } from "./openAiClient";
-import { scrubPossiblePii } from "./pii";
-import { logRagUsage } from "./usageLogger";
-import { prisma } from "../services/prisma";
+﻿import { Prisma } from "@prisma/client";
+import { createEmbedding, generateAnswerFromContext } from "./openAiClient.js";
+import { scrubPossiblePii } from "./pii.js";
+import { logRagUsage } from "./usageLogger.js";
+import { prisma } from "../services/prisma.js";
 
 type ChunkPayload = {
   chunkId: string;

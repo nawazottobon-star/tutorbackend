@@ -1,9 +1,9 @@
-import express from "express";
+﻿import express from "express";
 import { z } from "zod";
-import { prisma } from "../services/prisma";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
-import { requireTutor } from "../middleware/requireRole";
+import { prisma } from "../services/prisma.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
+import { requireTutor } from "../middleware/requireRole.js";
 
 const courseSubmissionsRouter = express.Router();
 

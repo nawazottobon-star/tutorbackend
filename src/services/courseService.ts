@@ -1,5 +1,5 @@
-import type { Prisma } from "@prisma/client";
-import { prisma } from "./prisma";
+﻿import type { Prisma } from "@prisma/client";
+import { prisma } from "./prisma.js";
 
 const LEGACY_COURSE_SLUGS: Record<string, string> = {
     "ai-in-web-development": "f26180b2-5dda-495a-a014-ae02e63f172f",

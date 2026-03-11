@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+﻿import { prisma } from "./prisma.js";
 
 export async function getWorkshopQuestions(offeringId: string) {
     return prisma.assessmentQuestion.findMany({

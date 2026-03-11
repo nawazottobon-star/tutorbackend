@@ -1,7 +1,7 @@
-import { Router } from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
-import { getLatestStatusesForCourse, getLearnerHistory, ensureTutorOrAdminAccess } from "../services/activityEventService";
+﻿import { Router } from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
+import { getLatestStatusesForCourse, getLearnerHistory, ensureTutorOrAdminAccess } from "../services/activityEventService.js";
 
 const router = Router();
 

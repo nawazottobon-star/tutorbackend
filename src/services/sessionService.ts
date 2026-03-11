@@ -1,7 +1,7 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
-import { prisma } from "./prisma";
-import { env } from "../config/env";
+import { prisma } from "./prisma.js";
+import { env } from "../config/env.js";
 
 type AccessTokenPayload = {
   sub: string;

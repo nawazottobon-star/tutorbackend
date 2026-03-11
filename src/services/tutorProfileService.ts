@@ -1,6 +1,6 @@
-import { prisma } from "./prisma";
-import { verifyPassword } from "../shared/utils/password";
-import { createSession } from "./sessionService";
+﻿import { prisma } from "./prisma.js";
+import { verifyPassword } from "../shared/utils/password.js";
+import { createSession } from "./sessionService.js";
 
 export async function isTutorForCourse(userId: string, courseId: string): Promise<boolean> {
     const assignment = await prisma.courseTutor.findFirst({

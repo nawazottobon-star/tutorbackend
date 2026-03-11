@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import type { AuthenticatedRequest } from "./requireAuth";
+﻿import type { Request, Response, NextFunction } from "express";
+import type { AuthenticatedRequest } from "./requireAuth.js";
 
 export function requireTutor(req: Request, res: Response, next: NextFunction): void {
   const auth = (req as AuthenticatedRequest).auth;

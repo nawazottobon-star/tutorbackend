@@ -1,4 +1,4 @@
-import {
+﻿import {
     getTopLearnersByCohort,
     getLearnerProgress,
     getCohortStats,
@@ -67,7 +67,7 @@ import {
     getDropoffPoints,
     getCohortPerformanceFactors,
     getProgressBlockers,
-} from "../services/tutorQueries";
+} from "../services/tutorQueries.js";
 
 /**
  * Resolve a name, email, or ID to a verified email address or return an error result

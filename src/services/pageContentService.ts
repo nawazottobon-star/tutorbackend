@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+﻿import { prisma } from "./prisma.js";
 import type { PageContent } from "@prisma/client";
 
 export async function getPageBySlug(slug: string): Promise<PageContent | null> {

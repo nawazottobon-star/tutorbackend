@@ -1,7 +1,7 @@
-import express from "express";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
-import { findUserById } from "../services/userService";
-import { asyncHandler } from "../shared/utils/asyncHandler";
+﻿import express from "express";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
+import { findUserById } from "../services/userService.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
 
 export const usersRouter = express.Router();
 

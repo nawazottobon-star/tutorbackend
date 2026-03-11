@@ -1,11 +1,11 @@
-import express from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
+﻿import express from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
 import {
   getTopicsByModuleNo,
   resolveCourseId,
   getTopicsByCourseId,
-} from "../services/lessonService";
+} from "../services/lessonService.js";
 
 export const lessonsRouter = express.Router();
 

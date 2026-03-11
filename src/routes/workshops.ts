@@ -1,8 +1,8 @@
-import express from "express";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
-import { prisma } from "../services/prisma";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { sendEmail } from "../services/emailService";
+﻿import express from "express";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
+import { prisma } from "../services/prisma.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { sendEmail } from "../services/emailService.js";
 
 export const workshopsRouter = express.Router();
 

@@ -1,6 +1,6 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import type { User } from "@prisma/client";
-import { prisma } from "./prisma";
+import { prisma } from "./prisma.js";
 
 type GoogleProfile = {
   email: string;

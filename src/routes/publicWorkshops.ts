@@ -1,6 +1,6 @@
-import express from "express";
-import { getWorkshopQuestions, registerForWorkshop } from "../services/publicWorkshopService";
-import { asyncHandler } from "../shared/utils/asyncHandler";
+﻿import express from "express";
+import { getWorkshopQuestions, registerForWorkshop } from "../services/publicWorkshopService.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
 
 export const publicWorkshopsRouter = express.Router();
 

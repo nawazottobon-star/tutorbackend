@@ -1,10 +1,10 @@
-import express from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { prisma } from "../services/prisma";
-import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth";
-import { requireTutor } from "../middleware/requireRole";
-import { generateTutorCopilotAnswer, improveEmailMessage } from "../rag/openAiClient";
-import { sendEmail } from "../services/emailService";
+﻿import express from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { prisma } from "../services/prisma.js";
+import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
+import { requireTutor } from "../middleware/requireRole.js";
+import { generateTutorCopilotAnswer, improveEmailMessage } from "../rag/openAiClient.js";
+import { sendEmail } from "../services/emailService.js";
 import { rateLimit } from "express-rate-limit";
 import {
   getChatbotSessionStats,
@@ -12,18 +12,18 @@ import {
   getPerLearnerStats,
   getLearnerCustomQuestions,
   getModuleActivityOverview,
-} from "../services/chatbot-stats.service";
+} from "../services/chatbot-stats.service.js";
 import {
   loginTutor,
   checkTutorHasCourses,
   getTutorCourses,
   isTutorForCourse,
-} from "../services/tutorProfileService";
+} from "../services/tutorProfileService.js";
 import {
   getCourseCohorts,
   getCourseEnrollments,
   getCourseProgressOverview,
-} from "../services/tutorAnalyticsService";
+} from "../services/tutorAnalyticsService.js";
 
 export const tutorsRouter = express.Router();
 

@@ -1,7 +1,7 @@
-import express from "express";
+﻿import express from "express";
 import { z } from "zod";
-import { prisma } from "../services/prisma";
-import { asyncHandler } from "../shared/utils/asyncHandler";
+import { prisma } from "../services/prisma.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
 
 const tutorApplicationsRouter = express.Router();
 

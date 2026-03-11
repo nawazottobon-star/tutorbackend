@@ -1,8 +1,8 @@
-import { prisma } from "./prisma";
-import { verifyPassword } from "../shared/utils/password";
-import { createSession } from "./sessionService";
-import { exchangeCodeForTokens, verifyGoogleIdToken } from "./googleOAuth";
-import { findOrCreateUserFromGoogle } from "./userService";
+﻿import { prisma } from "./prisma.js";
+import { verifyPassword } from "../shared/utils/password.js";
+import { createSession } from "./sessionService.js";
+import { exchangeCodeForTokens, verifyGoogleIdToken } from "./googleOAuth.js";
+import { findOrCreateUserFromGoogle } from "./userService.js";
 
 export async function loginWithPassword(emailRaw: string | undefined, passwordRaw: string | undefined) {
     const email = typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";

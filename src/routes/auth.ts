@@ -1,10 +1,10 @@
-import express from "express";
-import { asyncHandler } from "../shared/utils/asyncHandler";
-import { generateGoogleAuthUrl } from "../services/googleOAuth";
-import { deleteSessionByRefreshToken, renewSessionTokens } from "../services/sessionService";
-import { createOauthStateCookie, readOauthStateCookie, clearOauthStateCookie } from "../shared/utils/oauthState";
-import { env } from "../config/env";
-import { loginWithPassword, processGoogleCodeExchange, processGoogleIdToken } from "../services/authService";
+﻿import express from "express";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
+import { generateGoogleAuthUrl } from "../services/googleOAuth.js";
+import { deleteSessionByRefreshToken, renewSessionTokens } from "../services/sessionService.js";
+import { createOauthStateCookie, readOauthStateCookie, clearOauthStateCookie } from "../shared/utils/oauthState.js";
+import { env } from "../config/env.js";
+import { loginWithPassword, processGoogleCodeExchange, processGoogleIdToken } from "../services/authService.js";
 
 export const authRouter = express.Router();
 

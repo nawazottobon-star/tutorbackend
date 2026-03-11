@@ -1,21 +1,21 @@
-import express from "express";
+﻿import express from "express";
 import type { Express } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { healthRouter } from "./routes/health";
-import { authRouter } from "./routes/auth";
-import { usersRouter } from "./routes/users";
-import { lessonsRouter } from "./routes/lessons";
-import { coursesRouter } from "./routes/courses";
-import { tutorApplicationsRouter } from "./routes/tutorApplications";
-import { pagesRouter } from "./routes/pages";
-import { env } from "./config/env";
-import { tutorsRouter } from "./routes/tutors";
-import { adminRouter } from "./routes/admin";
-import { activityRouter } from "./routes/activity";
-import { courseSubmissionsRouter } from "./routes/courseSubmissions";
-import { workshopsRouter } from "./routes/workshops";
-import { publicWorkshopsRouter } from "./routes/publicWorkshops";
+import { healthRouter } from "./routes/health.js";
+import { authRouter } from "./routes/auth.js";
+import { usersRouter } from "./routes/users.js";
+import { lessonsRouter } from "./routes/lessons.js";
+import { coursesRouter } from "./routes/courses.js";
+import { tutorApplicationsRouter } from "./routes/tutorApplications.js";
+import { pagesRouter } from "./routes/pages.js";
+import { env } from "./config/env.js";
+import { tutorsRouter } from "./routes/tutors.js";
+import { adminRouter } from "./routes/admin.js";
+import { activityRouter } from "./routes/activity.js";
+import { courseSubmissionsRouter } from "./routes/courseSubmissions.js";
+import { workshopsRouter } from "./routes/workshops.js";
+import { publicWorkshopsRouter } from "./routes/publicWorkshops.js";
 
 export function createApp(): Express {
   const app = express();

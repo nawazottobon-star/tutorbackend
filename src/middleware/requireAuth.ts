@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "../services/sessionService";
+﻿import type { Request, Response, NextFunction } from "express";
+import { verifyAccessToken } from "../services/sessionService.js";
 
 export type AuthContext = {
   userId: string;

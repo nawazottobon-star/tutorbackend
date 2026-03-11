@@ -1,7 +1,7 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 import { differenceInDays } from "date-fns";
-import { prisma } from "./prisma";
-import { StruggleAnalysis, analyzeStruggle, getLatestStatusesForCourse } from "./activityEventService";
+import { prisma } from "./prisma.js";
+import { StruggleAnalysis, analyzeStruggle, getLatestStatusesForCourse } from "./activityEventService.js";
 
 export type TutorLearnerSnapshot = {
   userId: string;

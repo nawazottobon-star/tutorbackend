@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Chatbot Statistics Service
  * 
  * Provides read-only functions to fetch and analyze chatbot interaction data.
  * Supports cohort filtering to match the existing dashboard behavior.
  */
 
-import { prisma } from "./prisma";
+import { prisma } from "./prisma.js";
 
 /**
  * Calculate Levenshtein distance between two strings

@@ -1,6 +1,6 @@
-import express from "express";
-import { getPageBySlug } from "../services/pageContentService";
-import { asyncHandler } from "../shared/utils/asyncHandler";
+﻿import express from "express";
+import { getPageBySlug } from "../services/pageContentService.js";
+import { asyncHandler } from "../shared/utils/asyncHandler.js";
 
 const pagesRouter = express.Router();
 

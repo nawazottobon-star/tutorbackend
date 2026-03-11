@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { env } from "../config/env";
+﻿import { PrismaClient } from "@prisma/client";
+import { env } from "../config/env.js";
 
 declare global {
   // eslint-disable-next-line no-var

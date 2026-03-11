@@ -1,7 +1,7 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import type { CookieOptions } from "express-serve-static-core";
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 
 type StateCookiePayload = {
   state: string;

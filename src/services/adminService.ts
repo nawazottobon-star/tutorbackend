@@ -1,6 +1,6 @@
-import crypto from "node:crypto";
-import { prisma } from "./prisma";
-import { hashPassword } from "../shared/utils/password";
+﻿import crypto from "node:crypto";
+import { prisma } from "./prisma.js";
+import { hashPassword } from "../shared/utils/password.js";
 
 function slugify(value: string, fallback: string): string {
     const slug = value

@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { prisma } from "./prisma";
+﻿import { Prisma } from "@prisma/client";
+import { prisma } from "./prisma.js";
 
 export type TelemetryEventInput = {
   courseId: string;
