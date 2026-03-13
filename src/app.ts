@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import type { Express } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -16,6 +16,7 @@ import { activityRouter } from "./routes/activity.js";
 import { courseSubmissionsRouter } from "./routes/courseSubmissions.js";
 import { workshopsRouter } from "./routes/workshops.js";
 import { publicWorkshopsRouter } from "./routes/publicWorkshops.js";
+import { coldCallRouter } from "./routes/coldCall.js";
 
 export function createApp(): Express {
   const app = express();
@@ -73,6 +74,7 @@ export function createApp(): Express {
   apiRouter.use("/activity", activityRouter);
   apiRouter.use("/workshops", workshopsRouter);
   apiRouter.use("/public/workshops", publicWorkshopsRouter);
+  apiRouter.use("/cold-call", coldCallRouter);
   app.use("/api", apiRouter);
 
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

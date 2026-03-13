@@ -1,0 +1,90 @@
+[
+  {
+    "promptId": "1c1b4918-8423-4bdd-9b2d-79f30574c868",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "3aed48a9-03df-4e51-bf53-279bed1644dc",
+    "promptText": "How has AI changed the role of a web developer compared to traditional development?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T09:22:39.088Z",
+    "updatedAt": "2026-01-05T09:22:39.088Z"
+  },
+  {
+    "promptId": "69845feb-d65b-42ac-8413-58af158e6e45",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "8a092dae-256f-4045-bc95-54a0b3f6ca68",
+    "promptText": "How does AI contribute to the brainstorming process as described in the text?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T09:37:52.897Z",
+    "updatedAt": "2026-01-05T09:37:52.897Z"
+  },
+  {
+    "promptId": "c312e4bd-fe83-4b67-8fbb-ea5993c066df",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "d0570070-3a56-45f1-b294-cad2a8d0d410",
+    "promptText": "According to the text, what should come first: validation or building?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T09:41:39.860Z",
+    "updatedAt": "2026-01-05T09:41:39.860Z"
+  },
+  {
+    "promptId": "1f03cc1f-6dc6-4356-8fce-2d176076bd61",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "07596e07-8065-4864-8aba-16721e79c6e3",
+    "promptText": "What does it mean to “guard against creep” in project planning?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T09:42:38.419Z",
+    "updatedAt": "2026-01-05T09:42:38.419Z"
+  },
+  {
+    "promptId": "21826104-698b-458e-8e8b-667b6b082faa",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "148c03ad-7db7-4448-aad2-e4cbe10bc039",
+    "promptText": "What is the main benefit of using a reusable template for technical requirements?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T09:43:39.537Z",
+    "updatedAt": "2026-01-05T09:43:39.537Z"
+  },
+  {
+    "promptId": "5c7a0f7e-1d72-4ca4-9bfc-3b6c0b1afe5c",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "5b130d97-fcdd-49b6-acd3-7e9edc03a1d8",
+    "promptText": "How do different AI tools work together in a real web development workflow?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T04:20:08.257Z",
+    "updatedAt": "2026-01-05T04:20:08.257Z"
+  },
+  {
+    "promptId": "ad9ed822-28e5-43fb-bf8a-24f1d1fe7426",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "c3111dbe-126b-48b8-a5fa-8c964865942d",
+    "promptText": "What factors would you consider when choosing between a cloud-based and a local AI development environment?",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T04:20:08.257Z",
+    "updatedAt": "2026-01-05T04:20:08.257Z"
+  },
+  {
+    "promptId": "107ce246-6460-48d3-ba79-0fc3dfaf785d",
+    "courseId": "f26180b2-5dda-495a-a014-ae02e63f172f",
+    "topicId": "ccea7f8c-3a97-413e-82c3-1247362c1a0c",
+    "promptText": "What unique aspect of web development does this course emphasize?\r\n",
+    "helperText": "You will see your batchmates responses only after you submit your own answer.",
+    "displayOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-05T04:20:08.257Z",
+    "updatedAt": "2026-01-05T04:20:08.257Z"
+  }
+]
