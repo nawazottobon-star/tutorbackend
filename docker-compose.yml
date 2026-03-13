@@ -31,3 +31,4 @@ services:
 networks:
   cp-network:
     driver: bridge
+    name: course-platform-network
