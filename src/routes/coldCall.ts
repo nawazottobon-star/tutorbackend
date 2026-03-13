@@ -22,7 +22,7 @@ coldCallRouter.get(
     asyncHandler(async (req, res) => {
         const { courseId } = req.params;
         const auth = (req as AuthenticatedRequest).auth;
-        const tutor = await getTutor(auth?.userId || "");
+        const tutor = await getTutor(auth!.userId);
 
         if (!tutor) {
             res.status(403).json({ message: "Access denied: Tutors only." });
@@ -81,7 +81,7 @@ coldCallRouter.post(
     asyncHandler(async (req, res) => {
         const { topicId, promptText, helperText } = req.body;
         const auth = (req as AuthenticatedRequest).auth;
-        const tutor = await getTutor(auth?.userId || "");
+        const tutor = await getTutor(auth!.userId);
 
         if (!tutor || !topicId || !promptText) {
             res.status(400).json({ message: "Missing required fields or unauthorized." });
@@ -168,7 +168,7 @@ coldCallRouter.get(
     asyncHandler(async (req, res) => {
         const { topicId } = req.params;
         const auth = (req as AuthenticatedRequest).auth;
-        const tutor = await getTutor(auth?.userId || "");
+        const tutor = await getTutor(auth!.userId);
 
         if (!tutor) {
             res.status(403).json({ message: "Unauthorized." });
@@ -210,7 +210,7 @@ coldCallRouter.get(
     asyncHandler(async (req, res) => {
         const { topicId } = req.params;
         const auth = (req as AuthenticatedRequest).auth;
-        const tutor = await getTutor(auth?.userId || "");
+        const tutor = await getTutor(auth!.userId);
 
         if (!tutor) {
             res.status(403).json({ message: "Unauthorized." });
@@ -261,7 +261,7 @@ coldCallRouter.get(
         // Check if user is a member of any cohort for this course
         const membership = await prisma.cohortMember.findFirst({
             where: { 
-                userId: auth.userId,
+                userId: auth!.userId,
                 cohort: { courseId: prompt.courseId }
             },
             include: { cohort: true }
@@ -269,7 +269,7 @@ coldCallRouter.get(
 
         if (!membership) {
             // If they aren't a member, check if they are the tutor
-            const tutor = await getTutor(auth.userId);
+            const tutor = await getTutor(auth!.userId);
             const ownership = tutor ? await prisma.courseTutor.findUnique({
                 where: { courseId_tutorId: { courseId: prompt.courseId, tutorId: tutor.tutorId } }
             }) : null;
@@ -292,7 +292,7 @@ coldCallRouter.get(
 
         // For learners, check if they've already submitted
         const myMessage = await prisma.coldCallMessage.findFirst({
-            where: { promptId: prompt.promptId, userId: auth.userId, status: 'active' }
+            where: { promptId: prompt.promptId, userId: auth!.userId, status: 'active' }
         });
 
         const hasSubmitted = !!myMessage;
@@ -308,7 +308,7 @@ coldCallRouter.get(
                 },
                 include: {
                     user: { select: { userId: true, fullName: true } },
-                    stars: { where: { userId: auth.userId } },
+                    stars: { where: { userId: auth!.userId } },
                     _count: { select: { stars: true } }
                 },
                 orderBy: { createdAt: "desc" }
@@ -354,7 +354,7 @@ coldCallRouter.post(
         }
 
         const membership = await prisma.cohortMember.findFirst({
-            where: { userId: auth.userId, cohort: { courseId: prompt.courseId } }
+            where: { userId: auth!.userId, cohort: { courseId: prompt.courseId } }
         });
 
         if (!membership) {
@@ -366,7 +366,7 @@ coldCallRouter.post(
             data: {
                 promptId,
                 cohortId: membership.cohortId,
-                userId: auth.userId,
+                userId: auth!.userId,
                 body,
                 status: 'active'
             }
@@ -398,7 +398,7 @@ coldCallRouter.post(
         }
 
         const membership = await prisma.cohortMember.findFirst({
-            where: { userId: auth.userId, cohort: { courseId: parent.prompt.courseId } }
+            where: { userId: auth!.userId, cohort: { courseId: parent.prompt.courseId } }
         });
 
         if (!membership) {
@@ -410,7 +410,7 @@ coldCallRouter.post(
             data: {
                 promptId: parent.promptId,
                 cohortId: membership.cohortId,
-                userId: auth.userId,
+                userId: auth!.userId,
                 parentId: parentId,
                 rootId: parent.rootId || parentId,
                 body,
@@ -434,8 +434,8 @@ coldCallRouter.post(
         const auth = (req as AuthenticatedRequest).auth;
 
         await prisma.coldCallStar.upsert({
-            where: { messageId_userId: { messageId, userId: auth.userId } },
-            create: { messageId, userId: auth.userId },
+            where: { messageId_userId: { messageId, userId: auth!.userId } },
+            create: { messageId, userId: auth!.userId },
             update: {}
         });
 
@@ -455,7 +455,7 @@ coldCallRouter.delete(
         const auth = (req as AuthenticatedRequest).auth;
 
         await prisma.coldCallStar.deleteMany({
-            where: { messageId, userId: auth.userId }
+            where: { messageId, userId: auth!.userId }
         });
 
         res.status(204).send();
