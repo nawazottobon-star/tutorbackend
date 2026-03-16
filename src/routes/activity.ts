@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
 import { getLatestStatusesForCourse, getLearnerHistory, ensureTutorOrAdminAccess } from "../services/activityEventService.js";
@@ -14,13 +14,13 @@ router.get(
     requireAuth,
     asyncHandler(async (req: AuthenticatedRequest, res: any) => {
         const { courseId } = req.params;
-        const { cohortId } = req.query as { cohortId?: string };
+        const { cohortId, format } = req.query as { cohortId?: string, format?: string };
         const { userId, role } = req.auth!;
 
         // Ensure user has access to this course's telemetry
         await ensureTutorOrAdminAccess(userId, courseId, role);
 
-        const learners = await getLatestStatusesForCourse(courseId, cohortId);
+        const learners = await getLatestStatusesForCourse(courseId, cohortId, format);
 
         // Calculate summary
         const summary = {

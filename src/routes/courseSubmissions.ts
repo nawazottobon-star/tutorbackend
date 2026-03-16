@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { z } from "zod";
 import { prisma } from "../services/prisma.js";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
@@ -15,19 +15,24 @@ const fileItemSchema = z.object({
 
 const submissionSchema = z.object({
   courseName: z.string().min(1, "Course name is required"),
-  description: z.string().min(1, "Description is required"),
-  targetAudience: z.string().min(1, "Target audience is required"),
-  durationWeeks: z.number().int().min(1).default(4),
+  description: z.string().optional(),
+  targetAudience: z.string().optional(),
+  durationWeeks: z.number().int().optional(),
   category: z.string().min(1, "Category is required").default("General"),
-  moduleCount: z.number().int().min(1, "Module count must be at least 1"),
-  priceHigh: z.number().min(0, "High price cannot be negative"),
-  priceLow: z.number().min(0, "Low price cannot be negative"),
-  discountPercent: z.number().int().min(0).max(100),
+  moduleCount: z.number().int().min(1, "Module count must be at least 1").default(1),
+  priceHigh: z.number().optional(),
+  priceLow: z.number().optional(),
+  discountPercent: z.number().int().optional(),
   apiKeyEncrypted: z.string().optional(),
   apiKeyHint: z.string().optional(),
   apiKeyProvider: z.string().optional(),
   uploadedDocuments: z.array(fileItemSchema).default([]),
   videoLinks: z.array(z.string()).default([]),
+  learnerLevel: z.string().optional(),
+  requiresApiKey: z.boolean().default(false),
+  courseObjectives: z.string().optional(),
+  submissionMode: z.string().default("simple"),
+  structuredCurriculum: z.any().optional(),
 });
 
 courseSubmissionsRouter.post(
@@ -62,7 +67,7 @@ courseSubmissionsRouter.post(
     const payload = payloadResult.data;
 
     // Enforce business logic matching the db check
-    if (payload.priceLow > payload.priceHigh) {
+    if (payload.priceLow !== undefined && payload.priceHigh !== undefined && payload.priceLow > payload.priceHigh) {
       res.status(400).json({ message: "Lowest price cannot be greater than highest price" });
       return;
     }
@@ -75,6 +80,10 @@ courseSubmissionsRouter.post(
         targetAudience: payload.targetAudience,
         durationWeeks: payload.durationWeeks,
         category: payload.category,
+        learnerLevel: payload.learnerLevel,
+        requiresApiKey: payload.requiresApiKey,
+        courseObjectives: payload.courseObjectives,
+        submissionMode: payload.submissionMode,
         moduleCount: payload.moduleCount,
         priceHigh: payload.priceHigh,
         priceLow: payload.priceLow,
@@ -85,6 +94,7 @@ courseSubmissionsRouter.post(
         // Since Prisma deals with JS objects mapped to JSON, we pass the parsed arrays directly
         uploadedDocuments: payload.uploadedDocuments,
         videoLinks: payload.videoLinks,
+        structuredCurriculum: payload.structuredCurriculum,
         status: "pending_review",
       }
     });

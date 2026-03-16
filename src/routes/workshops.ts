@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
 import { prisma } from "../services/prisma.js";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
@@ -318,7 +318,8 @@ workshopsRouter.get(
             return;
         }
 
-        const workshops = await prisma.workshop.findMany({
+        // 1. Get explicit workshops assigned to this tutor
+        const assignedWorkshops = await prisma.workshop.findMany({
             where: { tutorId: tutor.tutorId },
             include: {
                 offering: {
@@ -335,7 +336,55 @@ workshopsRouter.get(
             }
         });
 
-        res.status(200).json({ workshops });
+        const formalWorkshopIds = assignedWorkshops.map(w => w.workshopId);
+        const formalOfferingIds = assignedWorkshops.map(w => w.offeringId);
+
+        // 2. Get courses owned by this tutor to find "Marketing" workshops (unassigned offerings)
+        const myCourses = await prisma.courseTutor.findMany({
+            where: { tutorId: tutor.tutorId },
+            select: { courseId: true }
+        });
+        const myCourseIds = myCourses.map(c => c.courseId);
+
+        // 3. Find offerings that belong to my courses but aren't formally started as a 'Workshop' record yet
+        const marketingOfferings = await prisma.courseOffering.findMany({
+            where: {
+                courseId: { in: myCourseIds },
+                programType: 'workshop',
+                offeringId: { notIn: formalOfferingIds }
+            },
+            include: {
+                _count: {
+                    select: { registrations: { where: { status: 'pending' } } }
+                },
+                workshopSessions: {
+                    orderBy: { scheduledAt: 'desc' },
+                    take: 1
+                }
+            }
+        });
+
+        // 4. Transform marketing offerings into a 'Workshop-like' structure for the frontend
+        const virtualWorkshops = marketingOfferings.map(offering => ({
+            workshopId: offering.offeringId, // Use offeringId as a virtual workshopId
+            offeringId: offering.offeringId,
+            tutorId: tutor.tutorId,
+            googleMeetLink: null,
+            maxSeats: null,
+            type: 'marketing',
+            offering: {
+                ...offering,
+                _count: { registrations: offering._count.registrations }
+            }
+        }));
+
+        // 5. Merge and return
+        const allWorkshops = [
+            ...assignedWorkshops.map(w => ({ ...w, type: 'formal' })),
+            ...virtualWorkshops
+        ];
+
+        res.status(200).json({ workshops: allWorkshops });
     })
 );
 
@@ -348,7 +397,8 @@ workshopsRouter.get(
         const auth = (req as AuthenticatedRequest).auth;
         const tutor = await getTutor(auth?.userId || "");
 
-        const workshop = await prisma.workshop.findFirst({
+        // Try formal workshop first
+        let workshop: any = await prisma.workshop.findFirst({
             where: {
                 workshopId: id,
                 tutorId: tutor?.tutorId
@@ -367,6 +417,41 @@ workshopsRouter.get(
                 }
             }
         });
+
+        // If not found, try as a virtual (marketing) workshop using offeringId
+        if (!workshop) {
+            const offering = await prisma.courseOffering.findFirst({
+                where: {
+                    offeringId: id,
+                    course: {
+                        tutors: {
+                            some: { tutorId: tutor?.tutorId }
+                        }
+                    }
+                },
+                include: {
+                    questions: true,
+                    workshopSessions: {
+                        orderBy: { sessionNo: 'desc' }
+                    },
+                    _count: {
+                        select: { registrations: true }
+                    }
+                }
+            });
+
+            if (offering) {
+                workshop = {
+                    workshopId: offering.offeringId,
+                    offeringId: offering.offeringId,
+                    tutorId: tutor?.tutorId,
+                    googleMeetLink: null,
+                    maxSeats: null,
+                    type: 'marketing',
+                    offering
+                };
+            }
+        }
 
         if (!workshop) {
             res.status(404).json({ message: "Workshop not found" });
@@ -428,19 +513,40 @@ workshopsRouter.get(
         const auth = (req as AuthenticatedRequest).auth;
         const tutor = await getTutor(auth?.userId || "");
 
+        // Resolve offeringId from either workshopId or offeringId
+        let offeringId = id;
         const workshop = await prisma.workshop.findFirst({
             where: { workshopId: id, tutorId: tutor?.tutorId }
         });
-
-        if (!workshop) {
-            res.status(404).json({ message: "Workshop not found" });
-            return;
+        
+        if (workshop) {
+            offeringId = workshop.offeringId;
+        } else {
+            // Verify tutor has access to the course of this offering
+            const offering = await prisma.courseOffering.findFirst({
+                where: {
+                    offeringId: id,
+                    course: {
+                        tutors: { some: { tutorId: tutor?.tutorId } }
+                    }
+                }
+            });
+            if (!offering) {
+                res.status(404).json({ message: "Workshop or offering not found" });
+                return;
+            }
+            offeringId = offering.offeringId;
         }
 
         const registrations = await prisma.registration.findMany({
             where: {
-                offeringId: workshop.offeringId,
-                ...(sessionId && { sessionId: String(sessionId) })
+                offeringId: offeringId,
+                ...(sessionId && {
+                    OR: [
+                        { sessionId: String(sessionId) },
+                        { sessionId: null }
+                    ]
+                })
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -455,44 +561,62 @@ workshopsRouter.patch(
     requireAuth,
     asyncHandler(async (req, res) => {
         const { id, regId } = req.params;
-        const { status } = req.body; // 'approved' | 'rejected'
+        const { status, customEmail } = req.body; // 'approved' | 'rejected' | 'customEmail' (optional HTML)
         const auth = (req as AuthenticatedRequest).auth;
         const tutor = await getTutor(auth?.userId || "");
 
-        const workshop = await prisma.workshop.findFirst({
+        // 1. Resolve Workshop/Offering
+        let workshop: any = await prisma.workshop.findFirst({
             where: { workshopId: id, tutorId: tutor?.tutorId },
             include: {
                 offering: {
                     include: {
-                        workshopSessions: {
-                            orderBy: { scheduledAt: 'desc' },
-                            take: 1
-                        }
+                        workshopSessions: { orderBy: { scheduledAt: 'desc' }, take: 1 }
                     }
                 }
             }
         });
 
         if (!workshop) {
+            // Check if it's a virtual/marketing workshop
+            const offering = await prisma.courseOffering.findFirst({
+                where: {
+                    offeringId: id,
+                    course: { tutors: { some: { tutorId: tutor?.tutorId } } }
+                },
+                include: {
+                    workshopSessions: { orderBy: { scheduledAt: 'desc' }, take: 1 }
+                }
+            });
+            if (offering) {
+                workshop = {
+                    workshopId: offering.offeringId,
+                    offeringId: offering.offeringId,
+                    tutorId: tutor?.tutorId,
+                    googleMeetLink: null,
+                    offering
+                };
+            }
+        }
+
+        if (!workshop) {
             res.status(404).json({ message: "Workshop not found" });
             return;
         }
 
+        // 2. Update Registration
         const registration = await prisma.registration.update({
             where: { registrationId: regId },
             data: { status }
         });
 
+        // 3. Send Email (Custom or Default)
         if (status === 'approved') {
             const session = workshop.offering.workshopSessions[0];
             const dateStr = session ? new Date(session.scheduledAt).toLocaleString() : 'TBD';
-
-            await sendEmail({
-                to: registration.email,
-                fromName: "Otto Learn Tutor",
-                subject: `Seat Confirmed: ${workshop.offering.title} 🎉`,
-                text: `Hi ${registration.fullName}, your seat for the workshop "${workshop.offering.title}" is confirmed.`,
-                html: `
+            
+            const subject = `Seat Confirmed: ${workshop.offering.title} 🎉`;
+            const defaultHtml = `
                 <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
                     <h2>Congratulations! 🎉</h2>
                     <p>Your application for the workshop <strong>"${workshop.offering.title}"</strong> has been approved.</p>
@@ -504,7 +628,14 @@ workshopsRouter.patch(
                     <hr />
                     <p style="font-size: 12px; color: #888;">This is an automated email from Otto Learn.</p>
                 </div>
-            `
+            `;
+
+            await sendEmail({
+                to: registration.email,
+                fromName: "Otto Learn Tutor",
+                subject: subject,
+                text: customEmail ? "Your application has been approved. Please see the HTML version of this email for details." : `Hi ${registration.fullName}, your seat for the workshop "${workshop.offering.title}" is confirmed.`,
+                html: customEmail || defaultHtml
             });
         }
 

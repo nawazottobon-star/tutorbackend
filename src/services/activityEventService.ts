@@ -1,4 +1,4 @@
-﻿import { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 
 export type TelemetryEventInput = {
@@ -102,7 +102,7 @@ export async function recordActivityEvents(userId: string, events: TelemetryEven
   });
 }
 
-export async function getLatestStatusesForCourse(courseId: string, cohortId?: string): Promise<LearnerStatusRow[]> {
+export async function getLatestStatusesForCourse(courseId: string, cohortId?: string, format?: string): Promise<LearnerStatusRow[]> {
   const windowedEvents = await prisma.$queryRaw<LearnerStatusRow[]>(Prisma.sql`
     SELECT
       r.event_id AS "eventId",
@@ -134,6 +134,7 @@ export async function getLatestStatusesForCourse(courseId: string, cohortId?: st
     LEFT JOIN users u ON u.user_id = r.user_id
     WHERE r.rn <= 20
     ${cohortId ? Prisma.sql`AND r.user_id IN (SELECT user_id FROM cohort_members WHERE cohort_id = ${cohortId}::uuid)` : Prisma.sql``}
+    ${format === 'ondemand' ? Prisma.sql`AND r.user_id NOT IN (SELECT user_id FROM cohort_members WHERE cohort_id IN (SELECT cohort_id FROM cohorts WHERE course_id = ${courseId}::uuid) AND user_id IS NOT NULL)` : Prisma.sql``}
   `);
 
   const grouped = new Map<string, LearnerStatusRow[]>();

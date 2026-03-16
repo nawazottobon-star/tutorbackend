@@ -1,4 +1,4 @@
-﻿import { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 
 export async function getCourseCohorts(courseId: string) {
@@ -14,7 +14,7 @@ function resolveDisplayName(fullName: string | null, email: string) {
     return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
 }
 
-export async function getCourseEnrollments(courseId: string, cohortId?: string) {
+export async function getCourseEnrollments(courseId: string, cohortId?: string, format?: string) {
     if (cohortId) {
         const members = await prisma.cohortMember.findMany({
             where: { cohortId },
@@ -34,8 +34,19 @@ export async function getCourseEnrollments(courseId: string, cohortId?: string) 
         }));
     }
 
+    const whereClause: Prisma.EnrollmentWhereInput = { courseId };
+    if (format === 'ondemand') {
+        whereClause.user = {
+            NOT: {
+                cohortMemberships: {
+                    some: { cohort: { courseId } }
+                }
+            }
+        };
+    }
+
     const enrollments = await prisma.enrollment.findMany({
-        where: { courseId },
+        where: whereClause,
         select: {
             enrollmentId: true,
             enrolledAt: true,
@@ -61,7 +72,7 @@ export async function getCourseEnrollments(courseId: string, cohortId?: string) 
     }));
 }
 
-export async function getCourseProgressOverview(courseId: string, cohortId?: string) {
+export async function getCourseProgressOverview(courseId: string, cohortId?: string, format?: string) {
     const moduleNumbers = await prisma.topic.findMany({
         where: { courseId, moduleNo: { gt: 0 } },
         select: { moduleNo: true },
@@ -96,8 +107,19 @@ export async function getCourseProgressOverview(courseId: string, cohortId?: str
             enrolledAt: m.addedAt.toISOString(),
         }));
     } else {
+        const whereClause: Prisma.EnrollmentWhereInput = { courseId };
+        if (format === 'ondemand') {
+            whereClause.user = {
+                NOT: {
+                    cohortMemberships: {
+                        some: { cohort: { courseId } }
+                    }
+                }
+            };
+        }
+
         const enrollments = await prisma.enrollment.findMany({
-            where: { courseId },
+            where: whereClause,
             include: { user: { select: { fullName: true, email: true } } },
         });
         targetUsers = enrollments.map((e) => ({

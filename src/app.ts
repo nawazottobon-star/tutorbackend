@@ -17,6 +17,7 @@ import { courseSubmissionsRouter } from "./routes/courseSubmissions.js";
 import { workshopsRouter } from "./routes/workshops.js";
 import { publicWorkshopsRouter } from "./routes/publicWorkshops.js";
 import { coldCallRouter } from "./routes/coldCall.js";
+import { aiRouter } from "./routes/ai.js";
 
 export function createApp(): Express {
   const app = express();
@@ -58,6 +59,7 @@ export function createApp(): Express {
   app.use("/course-submissions", courseSubmissionsRouter);
   app.use("/admin", adminRouter);
   app.use("/activity", activityRouter);
+  app.use("/ai", aiRouter);
 
   // Mirror routes under /api/* so the frontend can call them with a consistent prefix.
   const apiRouter = express.Router();
@@ -75,6 +77,7 @@ export function createApp(): Express {
   apiRouter.use("/workshops", workshopsRouter);
   apiRouter.use("/public/workshops", publicWorkshopsRouter);
   apiRouter.use("/cold-call", coldCallRouter);
+  apiRouter.use("/ai", aiRouter);
   app.use("/api", apiRouter);
 
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

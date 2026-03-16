@@ -1,4 +1,4 @@
-﻿import { prisma } from "./prisma.js";
+import { prisma } from "./prisma.js";
 
 export async function getWorkshopQuestions(offeringId: string) {
     return prisma.assessmentQuestion.findMany({
@@ -19,6 +19,12 @@ export async function registerForWorkshop(offeringId: string, data: {
     yearOfPassing?: string;
     branch?: string;
 }) {
+    // Auto-attach to the most recent active session for this offering
+    const latestSession = await prisma.workshopSession.findFirst({
+        where: { offeringId },
+        orderBy: { sessionNo: 'desc' }
+    });
+
     return prisma.registration.create({
         data: {
             offeringId,
@@ -30,6 +36,7 @@ export async function registerForWorkshop(offeringId: string, data: {
             branch: data.branch || "N/A",
             status: "pending",
             answersJson: data.answers,
+            sessionId: latestSession?.sessionId ?? null,
             updatedAt: new Date(),
         },
     });

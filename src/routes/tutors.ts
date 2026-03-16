@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
 import { prisma } from "../services/prisma.js";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/requireAuth.js";
@@ -133,7 +133,8 @@ tutorsRouter.get(
     }
 
     const cohortId = typeof req.query.cohortId === "string" ? req.query.cohortId : undefined;
-    const enrollments = await getCourseEnrollments(courseId, cohortId);
+    const format = typeof req.query.format === "string" ? req.query.format : undefined;
+    const enrollments = await getCourseEnrollments(courseId, cohortId, format);
     res.status(200).json({ enrollments });
   }),
 );
@@ -180,7 +181,8 @@ tutorsRouter.get(
     }
 
     const cohortId = typeof req.query.cohortId === "string" ? req.query.cohortId : undefined;
-    const stats = await getCourseProgressOverview(courseId, cohortId);
+    const format = typeof req.query.format === "string" ? req.query.format : undefined;
+    const stats = await getCourseProgressOverview(courseId, cohortId, format);
     res.status(200).json(stats);
   }),
 );
