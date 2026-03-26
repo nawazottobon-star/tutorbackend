@@ -378,13 +378,22 @@ model TutorApplication {
   fullName          String   @map("full_name")
   email             String
   phone             String?
-  headline          String
+  city              String?
+  timezone          String?
+  headline          String   @default("Tutor Application")
+  expertiseArea     String   @default("General") @map("expertise_area")
+  expertiseStreams  String[] @default([]) @map("expertise_streams")
+  expertiseOther    String?  @map("expertise_other_text")
+  experienceYears   Int?     @map("experience_years")
+  linkedinUrl       String?  @map("linkedin_url")
+  bio               String?
   courseTitle       String   @map("course_title")
   courseDescription String   @map("course_description")
   targetAudience    String   @map("target_audience")
-  expertiseArea     String   @map("expertise_area")
-  experienceYears   Int?     @map("experience_years")
   availability      String   @map("availability")
+  teachingFormats   String[] @default([]) @map("teaching_formats")
+  paymentModel      String?  @map("payment_model")
+  payoutMethod      String?  @map("payout_method")
   status            String   @default("pending")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")

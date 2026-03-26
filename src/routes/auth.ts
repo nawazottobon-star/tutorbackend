@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
 import { generateGoogleAuthUrl } from "../services/googleOAuth.js";
 import { deleteSessionByRefreshToken, renewSessionTokens } from "../services/sessionService.js";
@@ -13,6 +13,22 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const result = await loginWithPassword(req.body?.email, req.body?.password);
     if (result.status === 200 && result.data) {
+      res.status(200).json(result.data);
+    } else {
+      res.status(result.status).json({ message: result.message });
+    }
+  }),
+);
+
+authRouter.post(
+  "/admin/login",
+  asyncHandler(async (req, res) => {
+    const result = await loginWithPassword(req.body?.email, req.body?.password);
+    if (result.status === 200 && result.data) {
+      if (result.data.user.role !== 'admin') {
+        res.status(403).json({ message: "Access denied: Admin only" });
+        return;
+      }
       res.status(200).json(result.data);
     } else {
       res.status(result.status).json({ message: result.message });

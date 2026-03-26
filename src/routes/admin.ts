@@ -1,8 +1,8 @@
-﻿import express from "express";
+import express from "express";
 import { asyncHandler } from "../shared/utils/asyncHandler.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireRole.js";
-import { getTutorApplications, approveTutorApplication } from "../services/adminService.js";
+import { getTutorApplications, approveTutorApplication, rejectTutorApplication } from "../services/adminService.js";
 
 const adminRouter = express.Router();
 
@@ -22,7 +22,6 @@ adminRouter.post(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { applicationId } = req.params;
-
     const result = await approveTutorApplication(applicationId);
 
     if (result.status === 200 && result.data) {
@@ -30,6 +29,17 @@ adminRouter.post(
     } else {
       res.status(result.status).json({ message: result.message });
     }
+  }),
+);
+
+adminRouter.post(
+  "/tutor-applications/:applicationId/reject",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { applicationId } = req.params;
+    const result = await rejectTutorApplication(applicationId);
+    res.status(result.status).json({ message: result.message });
   }),
 );
 
